@@ -1,38 +1,84 @@
-import React from "react";
+import React, { useContext, useEffect, useState } from "react";
 import edit from "../img/edit.png";
 import Delete from "../img/delete.png";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import Menu from "../components/Menu";
+import axios from "axios";
+import moment from "moment";
+import { AuthContext } from "../context/authContext";
+import DOMPurify from "dompurify";
+import Backend_API from "../../Backend_API";
 const Single = () => {
+  const [post, setPost] = useState({});
+  const location = useLocation();
+  const navigate = useNavigate();
+  const PostId = location.pathname.split("/")[2];
+  const { currentUser } = useContext(AuthContext);
+  //console.log(location);
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const res = await axios.get(
+          `${Backend_API}/api/posts/${PostId}`
+        );
+        setPost(res.data);
+      } catch (e) {
+        console.log(e);
+      }
+    };
+    fetchData();
+  }, [PostId]);
+
+  const handleDelete = async ()=>{
+    try {
+      await axios.delete(`${Backend_API}/api/posts/${PostId}`, {
+        withCredentials: true,
+      });
+      navigate("/")
+    } catch (err) {
+      console.log(err);
+    }
+  }
+  const getText = (html) =>{
+    const doc = new DOMParser().parseFromString(html, "text/html")
+    return doc.body.textContent
+  }
+
+
   return (
     <div className="single">
       {/* Content Section */}
       <div className="content">
-        <img
-          src="https://img.freepik.com/free-vector/blogging-fun-content-creation-online-streaming-video-blog-young-girl-making-selfie-social-network-sharing-feedback-self-promotion-strategy-vector-isolated-concept-metaphor-illustration_335657-855.jpg"
-          alt="Blogging illustration"
-        />
+        <img src={`../upload/${post.img}`} alt="Blogging illustration" />
         <div className="user">
-          <img
-            src="https://www.fcriindia.com/wp-content/uploads/2016/07/PASSPORT-SIZE.jpg"
+         { post.userImg && <img
+            src={post?.userImg}
             alt="User"
-          />
+          />}
           <div className="info">
-            <span>Harsh</span>
-            <p>Posted 2 days ago</p>
+            <span>{post?.username}</span>
+            <p>Posted {moment(post.date).fromNow()}</p>
           </div>
-          <div className="edit">
-          <Link to={`/write?edit=2`}>
-            <img src={edit} alt="Edit" />
-          </Link>
-          <img src={Delete} alt="Delete" />
+          {currentUser?.username === post?.username && (
+            <div className="edit">
+              <Link to={`/write?edit=2`} state={post}>
+                <img src={edit} alt="Edit" />
+              </Link>
+              <img  onClick={handleDelete} src={Delete} alt="Delete" />
+            </div>
+          )}
         </div>
-        </div>
-        <h1>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam. </h1>
-        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p><p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+        <h1>
+          {post.title}
+        </h1>
+        <p
+        dangerouslySetInnerHTML={{
+          __html: DOMPurify.sanitize(post.desc),
+        }}
+        ></p> 
       </div>
       {/* Menu Section */}
-      <Menu></Menu>
+      <Menu cat={post.cat}></Menu>
     </div>
   );
 };

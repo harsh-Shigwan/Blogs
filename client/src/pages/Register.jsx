@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
+import Backend_API from "../../Backend_API";
 const Register = () => {
   const [input, setInput] = useState({
     username: "",
@@ -18,7 +19,7 @@ const Register = () => {
 
     try {
       await axios.post(
-        "http://localhost:8800/api/auth/register",
+        `${Backend_API}/api/auth/register`,
         input);
       navigate("/login");
     } catch (err) {
